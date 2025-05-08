@@ -21,7 +21,7 @@ def get_db(request: Request) -> AsyncIOMotorDatabase:
 
 async def connect_to_chrome():
     client = await chromadb.AsyncHttpClient(port=8080)
-    collection = await client.get_or_create_collection(name="docs")
+    collection = await client.get_or_create_collection(name="test")
     return collection
 
 def get_chrome_db(request: Request) -> AsyncCollection:

@@ -5,18 +5,19 @@ import time
 
 from beanie import init_beanie
 from fastapi import FastAPI, Request
-
+from fastapi.responses import JSONResponse
+from app.core.error import APIError
 from app.core.database import close_mongo_connection, connect_to_chrome, connect_to_mongo
 from app.core.environment import API_VERSION, APP_NAME
 from app.core.log import Logger
-from app.schemas.file import FileDocument
+from app.schemas.file import ChunkDocument
 from app.api.v1.file import FileRouter
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     client = await connect_to_mongo()
     app.state.mongo_client = client
-    await init_beanie(client["db"], document_models=[FileDocument])
+    await init_beanie(client["db"], document_models=[ChunkDocument])
     chrome_coll = await connect_to_chrome()
     app.state.chrome_client = chrome_coll
     yield 
@@ -29,6 +30,29 @@ app = FastAPI(
     version=API_VERSION,
     lifespan=lifespan
 )
+
+
+@app.exception_handler(APIError)
+async def exception_handler(request: Request, exc: APIError):
+    """
+    Для собственных ошибок  
+    """
+    Logger.error(f"APIError: {exc}")
+    return JSONResponse(
+        status_code=exc.code,
+        content={"error": f"{exc}"},
+    )
+
+@app.exception_handler(Exception)
+async def exception_handler(request: Request, exc: Exception):
+    """
+    Для системных ошибок
+    """
+    Logger.error(f"SYSTEM ERROR: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": f"Internal error: {exc}"},
+    )
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):

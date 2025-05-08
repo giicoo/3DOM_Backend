@@ -3,20 +3,33 @@ from typing import List, Literal, Optional
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel
 
-class Metadata(BaseModel):
-    source: str = None
-    chunk_index: int = 0 
-    page_number: int = 0
+class ChunkSchema(BaseModel):
+    id: Optional[PydanticObjectId] 
+    chat_id: Optional[PydanticObjectId]
+    filename: str 
+    chunk_index: int
+    text: str 
     created_at: datetime 
 
-class File(BaseModel):
-    id: Optional[PydanticObjectId] = None
-    text: str
-    metadata: Metadata
-    
     class Config:
         json_encoders = {PydanticObjectId: str}
 
 
-class FileDocument(File, Document):
+class ChunkDocument(ChunkSchema, Document):
     pass
+
+class Properties(BaseModel):
+    chat_id: Optional[PydanticObjectId]
+
+    class Config:
+        json_encoders = {PydanticObjectId: str}
+
+class ContextIn(BaseModel):
+    ids: Optional[List[PydanticObjectId]]
+    prompt: Optional[str]
+
+    class Config:
+        json_encoders = {PydanticObjectId: str}
+
+class ContextOut(ContextIn):
+    context: List[str]
