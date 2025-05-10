@@ -18,7 +18,7 @@ class MessageService:
 
             return await self.repo.create_message(msg)
         except Exception as e:
-            raise Exception("message service: create message: {e}")
+            raise Exception(f"message service: create message: {e}")
         
     async def get_message(self, id: str) -> Message:
         try:
@@ -60,11 +60,11 @@ class MessageService:
 
         return messages
     
-    async def get_all(self, chat_id:str):
+    async def get_all(self, chat_id:str) -> List[Message]:
         messages = await self.repo.get_messages(chat_id=chat_id)
         return messages
     
-    async def stream(self, id: str, chat_id: str):
+    async def stream(self, id: str):
         """
         Вызывается после create_message, получая id последнего добавленного сообщения, получаем необходимую ветку.
         Генерируем ответ и сохраняем новое сообщение с parent_id=id
@@ -75,9 +75,8 @@ class MessageService:
 
         async with httpx.AsyncClient(timeout=None) as client:
 
-                chat = await client.post(
-                    f"http://chat-service:8000/get/{chat_id}",
-                    json=input
+                chat = await client.get(
+                    f"http://chat-service:8000/get/{str(message.chat_id)}",
                 )
 
                 chat = chat.json()
@@ -86,13 +85,12 @@ class MessageService:
         async with httpx.AsyncClient(timeout=None) as client:
 
             context = await client.post(
-                "http://ollama-service:8000/get_context",
+                "http://file-service:8000/get_context",
                 json= {
-                    "ids": message.res_ids,
+                    "ids": [str(i) for i in message.res_ids],
                     "prompt": message.content
                 }
             )
-
             context = context.json()["context"]
 
 
@@ -109,10 +107,13 @@ class MessageService:
                 },
                 headers={"Accept": "text/event-stream"}
             ) as response:
+                full_response=""
                 async for line in response.aiter_lines():
                     if line.startswith("data: "):
-                        yield line.removeprefix("data: ").strip()
-
+                        full_response+=line.removeprefix("data: ")
+                        yield line.removeprefix("data: ")
+        ida = await self.create_message(Message(chat_id=str(message.chat_id), role="assistant", content=full_response, parent_id=id, res_ids=[str(i) for i in message.res_ids]))
+        yield f"ID: {ida}"
             
 def get_msg_service(repo: MessageRepository = Depends(get_msg_repo)):
     return MessageService(repo)

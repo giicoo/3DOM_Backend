@@ -46,7 +46,7 @@ class MessageRepository:
     
     async def get_messages(self, chat_id: str) -> List[Message]:
         try:
-            messages = await MessageDocument.find_many(MessageDocument.chat_id==chat_id).to_list()
+            messages = await MessageDocument.find_many(MessageDocument.chat_id==ObjectId(chat_id)).to_list()
             return [Message(id=msg.id,
                             chat_id=msg.chat_id,
                             parent_id=msg.parent_id,

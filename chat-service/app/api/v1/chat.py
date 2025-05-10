@@ -1,4 +1,5 @@
 import logging
+from bson import ObjectId
 from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Response
 from fastapi.responses import JSONResponse
@@ -30,10 +31,11 @@ async def create_chat_auto(chat: ChatIn, query: str, chatService: ChatService = 
 @ChatRouter.get("/get/{chat_id}", response_model=ChatOut)
 async def get_chat(chat_id: str, chatService: ChatService = Depends(get_chat_service)):
     chat = await chatService.get_chat(chat_id)
-    response = ChatOut(id=chat.id, 
+    response = ChatOut(id=ObjectId(chat.id), 
                     telegram_id=chat.telegram_id, 
                     model=chat.model, 
                     title=chat.title,
+                    token=chat.token,
                     created_at=chat.created_at)
     return response
 
@@ -42,7 +44,7 @@ async def get_chats(telegram_id: int, chatService: ChatService = Depends(get_cha
     chats = await chatService.get_chats_by_telegram_id(telegram_id)
     response: List[ChatOut] = []
     for chat in chats:
-        response.append(ChatOut(id=chat.id, 
+        response.append(ChatOut(id=ObjectId(chat.id), 
                                 telegram_id=chat.telegram_id, 
                                 model=chat.model, 
                                 title=chat.title,

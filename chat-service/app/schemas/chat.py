@@ -6,12 +6,12 @@ from beanie import PydanticObjectId
 
 
 class ChatScheme(BaseModel):
-    id: Optional[PydanticObjectId] 
-    telegram_id: int 
-    title: str 
-    model: str 
-    token: str 
-    created_at: datetime 
+    id: Optional[PydanticObjectId] = None
+    telegram_id: int = None
+    title: str = None
+    model: str = None
+    token: str = ""
+    created_at: datetime = None
 
 
     class Config:
@@ -31,6 +31,7 @@ class ChatOut(BaseModel):
     telegram_id: int
     model: str
     title: str
+    token: str = ""
     created_at: datetime 
 
 

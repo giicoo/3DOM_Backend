@@ -18,7 +18,7 @@ async def create_message(query: str, ollamaService: OllamaService = Depends(get_
 @OllamaRouter.post("/embedding")
 async def create_embedding(input: List[str], ollamaService: OllamaService = Depends(get_ollama_service)):
     embedding = await ollamaService.embedding(input)
-    return JSONResponse({"embedding": embedding.model_dump_json()})
+    return JSONResponse(embedding.model_dump())
 
 @OllamaRouter.post("/stream")
 async def stream(chat: OllamaChatIn, ollamaService: OllamaService = Depends(get_ollama_service)):

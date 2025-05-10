@@ -26,9 +26,9 @@ class ChatService:
 
                 title = title.json()["title"]
             chat.title = title
-            chatDB = ChatDocument(telegram_id=chat.telegram_id,model=chat.model,title=chat.title)
+            chatDB = ChatDocument(telegram_id=chat.telegram_id,model=chat.model,title=chat.title, created_at=chat.created_at)
             resultDB = await self.repo.create_chat(chatDB)
-            return str(resultDB.id)
+            return resultDB
         
         except Exception as e:
             raise Exception(f"chat service: create auto: {e}")
@@ -74,6 +74,7 @@ class ChatService:
                     telegram_id=chat.telegram_id, 
                     model=chat.model,
                     title=chat.title,
+                    token=chat.token,
                     created_at=chat.created_at)
         except Exception as e:
             raise Exception(f"chat get service: {e}")
