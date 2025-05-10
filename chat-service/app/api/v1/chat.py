@@ -55,3 +55,13 @@ async def get_chats(telegram_id: int, chatService: ChatService = Depends(get_cha
 @ChatRouter.delete("/delete")
 async def delete_chat(chat_id:str=None, chatService: ChatService = Depends(get_chat_service)):
     await chatService.delete_chat(chat_id)
+
+@ChatRouter.post("/public")
+async def public_chat(chat_id:str=None, chatService: ChatService = Depends(get_chat_service)):
+    response = await chatService.create_public(chat_id)
+    return JSONResponse({"token": response})
+
+@ChatRouter.get("/public/{token}")
+async def public_chat(token:str, chatService: ChatService = Depends(get_chat_service)):
+    response = await chatService.get_public(token)
+    return JSONResponse(response)

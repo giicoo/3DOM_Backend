@@ -33,12 +33,12 @@ class ChatService:
         except Exception as e:
             raise Exception(f"chat service: create auto: {e}")
     
-    async def create_public(self, chat_id: str):
+    async def create_public(self, chat_id: str) -> str:
         try:
             characters = string.ascii_letters + string.digits  # A-Z, a-z, 0-9
             token = ''.join(random.choices(characters, k=24))
             await self.repo.save_token(chat_id=chat_id, token=token)
-        
+            return token
         except Exception as e:
             raise Exception(f"chat service: create auto: {e}")
         
@@ -53,6 +53,7 @@ class ChatService:
                 )
 
                 response = response.json()
+                return response
         except Exception as e:
             raise Exception(f"chat service: get public: {e}")
     
