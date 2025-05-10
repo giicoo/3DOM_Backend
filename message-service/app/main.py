@@ -5,7 +5,8 @@ import time
 
 from beanie import init_beanie
 from fastapi import FastAPI, Request
-
+from fastapi.responses import JSONResponse
+from app.core.error import APIError
 from app.api.v1.message import MsgRouter
 from app.core.database import close_mongo_connection, connect_to_mongo
 from app.core.environment import API_VERSION, APP_NAME
@@ -24,10 +25,33 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title=APP_NAME,
+    title=APP_NAME+" message service",
     version=API_VERSION,
     lifespan=lifespan
 )
+
+@app.exception_handler(APIError)
+async def exception_handler(request: Request, exc: APIError):
+    """
+    Для собственных ошибок  
+    """
+    Logger.error(f"APIError: {exc}")
+    return JSONResponse(
+        status_code=exc.code,
+        content={"error": f"{exc}"},
+    )
+
+@app.exception_handler(Exception)
+async def exception_handler(request: Request, exc: Exception):
+    """
+    Для системных ошибок
+    """
+    Logger.error(f"SYSTEM ERROR: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={"error": f"Internal error: {exc}"},
+    )
+
 
 @app.middleware("http")
 async def add_process_time_header(request: Request, call_next):

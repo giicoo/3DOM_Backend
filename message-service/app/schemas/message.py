@@ -20,6 +20,7 @@ class MessageIn(BaseModel):
     chat_id: Optional[PydanticObjectId] = None
     parent_id: Optional[PydanticObjectId] = None
     res_ids: Optional[List[PydanticObjectId]] = None
+    role: str = "user"
     content: str
 
 

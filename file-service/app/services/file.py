@@ -1,23 +1,32 @@
 import asyncio
 from typing import List
 from bson import ObjectId
+import httpx
 from spire.doc import *
 from fastapi import Depends
 from app.repository.file import FileRepository, get_file_repo
 from app.repository.chrome import ChromaRepository, get_chroma_repo
 from app.core.log import Logger
 import pymupdf 
-from ollama import AsyncClient
-from app.core.environment import OLLAMA_URI
 from app.domain.file import Context, Chunk
 
 class FileService:
     def __init__(self, repoChroma: ChromaRepository, repoMongo: FileRepository):
-        self.client = AsyncClient(host=OLLAMA_URI)
         self.repoChroma = repoChroma
         self.repoMongo = repoMongo
     
-    async def upload_text_file(self, chat_id: str, filename: str):
+    async def embend(self, input: List[str]):
+        async with httpx.AsyncClient(timeout=None) as client:
+
+                embend = await client.post(
+                    "http://ollama-service:8000/embendding",
+                    json=input
+                )
+
+                embend = embend.json()
+                return embend
+    
+    async def upload_text_file(self, chat_id: str, filename: str) -> List[str]:
         """
         Основная идея: 
         1. Получить текст каждой страницы
@@ -31,7 +40,7 @@ class FileService:
 
             doc = pymupdf.open(path)
             chunks: List[Chunk] = []
-
+            ids = []
 
             for _, page in enumerate(doc): # enumerate  для debug и вывода id 
                 text = page.get_text()
@@ -44,12 +53,12 @@ class FileService:
                                   text=text[i:i+500])
                    
                     chunks.append(chunkDB) # чтобы не каждый чанк эмбенддить и сохранять в БД две, группируем по 500 элементов и сохраняем потом
-
+                    ids.append(chunkDB.id)
 
                 
                 if len(chunks)>500: # по кускам отправляем в модели
                     # параллельно запускаем эмбенддинг и сохранение в Mongo 
-                    embedding_task = asyncio.create_task(self.client.embed(model="nomic-embed-text", input=[c.text for c in chunks])) # делаем эмбенддинг с помощью ollama
+                    embedding_task = asyncio.create_task(self.embed(input=[c.text for c in chunks])) # делаем эмбенддинг с помощью ollama
                     mongo_task = asyncio.create_task(self.repoMongo.create_chunks(chunks)) # сохраняем в MongoDB. P.S. изначально должно было возвращать ids, которые затем использовались бы в ChromaDB
 
                     
@@ -68,7 +77,7 @@ class FileService:
 
             # если что-то осталось делаем те же самые действия        
             if chunks:
-                embedding_task = asyncio.create_task(self.client.embed(model="nomic-embed-text", input=[c.text for c in chunks])) # делаем эмбенддинг с помощью ollama
+                embedding_task = asyncio.create_task(self.embend([c.text for c in chunks])) # делаем эмбенддинг с помощью ollama
                 mongo_task = asyncio.create_task(self.repoMongo.create_chunks(chunks)) # сохраняем в MongoDB. P.S. изначально должно было возвращать ids, которые затем использовались бы в ChromaDB
                 
                 
@@ -81,17 +90,17 @@ class FileService:
                                                                                                                 # так как все асинхронно это позволит асинхронно добавлять и в Mongo и в ChromaDB
 
                 await asyncio.gather(mongo_task, chroma_task)
-                print(chroma_task)
                 # обнуляем чтоб не дублировать
                 chunks = []
 
+            return ids
         except Exception as e:
             raise Exception(f"file service: upload text: {e}")
 
     async def get_context(self, context: Context) -> Context:
         try:
             # делаем эмбенддинг для промпта 
-            response = await self.client.embed(model="nomic-embed-text", input=context.prompt)
+            response = await self.embed(input=context.prompt)
             embeddings = response["embeddings"]
 
             # поиск нужных даннвх по чату

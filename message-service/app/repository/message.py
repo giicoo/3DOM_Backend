@@ -1,3 +1,4 @@
+from typing import List
 from bson import ObjectId
 from fastapi import Depends
 from app.core.database import get_db
@@ -14,28 +15,47 @@ class MessageRepository:
         
 
     async def create_message(self, msg: Message) -> str:
-        message = MessageDocument(chat_id=msg.chat_id,
-                                  parent_id=msg.parent_id,
-                                  res_ids=msg.res_ids,
-                                  content=msg.content,
-                                  role=msg.role,
-                                  created_at=msg.created_at)
-        await message.save()
-        
-        return str(message.id)
+        try:
+            message = MessageDocument(chat_id=msg.chat_id,
+                                    parent_id=msg.parent_id,
+                                    res_ids=msg.res_ids,
+                                    content=msg.content,
+                                    role=msg.role,
+                                    created_at=msg.created_at)
+            await message.save()
+            
+            return str(message.id)
+        except Exception as e:
+            raise Exception(f"message repo: create message: {e}")
     
     async def get_message(self, id: str) -> Message:
-        message = await MessageDocument.find_one(MessageDocument.id==ObjectId(id))
-        if not message:
-            return Message()
-        
-        return Message(id=message.id,
-                       chat_id=message.chat_id,
-                       parent_id=message.parent_id,
-                       res_ids=message.res_ids,
-                       role=message.role,
-                       content=message.content,
-                       created_at=message.created_at)
+        try: 
+            message = await MessageDocument.find_one(MessageDocument.id==ObjectId(id))
+            if not message:
+                return Message()
+            
+            return Message(id=message.id,
+                        chat_id=message.chat_id,
+                        parent_id=message.parent_id,
+                        res_ids=message.res_ids,
+                        role=message.role,
+                        content=message.content,
+                        created_at=message.created_at)
+        except Exception as e:
+            raise Exception(f"message repo: get message: {e}")
+    
+    async def get_messages(self, chat_id: str) -> List[Message]:
+        try:
+            messages = await MessageDocument.find_many(MessageDocument.chat_id==chat_id).to_list()
+            return [Message(id=msg.id,
+                            chat_id=msg.chat_id,
+                            parent_id=msg.parent_id,
+                            res_ids=msg.res_ids,
+                            role=msg.role,
+                            content=msg.content,
+                            created_at=msg.created_at) for msg in messages]
+        except Exception as e:
+            raise Exception(f"message repo: get all messages: {e}")
 
 def get_msg_repo(db: AsyncIOMotorDatabase = Depends(get_db)):
     return MessageRepository(db)

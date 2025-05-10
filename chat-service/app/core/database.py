@@ -1,6 +1,3 @@
-import chromadb
-
-from chromadb.api.models.AsyncCollection import AsyncCollection
 from fastapi import Request
 from motor.motor_asyncio import AsyncIOMotorClient, AsyncIOMotorDatabase
 from app.core.environment import MONGO_URI
@@ -19,10 +16,3 @@ async def close_mongo_connection(client: AsyncIOMotorClient):
 def get_db(request: Request) -> AsyncIOMotorDatabase:
     return request.app.state.mongo_client["db"]
 
-async def connect_to_chrome():
-    client = await chromadb.AsyncHttpClient(host="chroma-server", port=8000)
-    collection = await client.get_or_create_collection(name="test")
-    return collection
-
-def get_chrome_db(request: Request) -> AsyncCollection:
-    return request.app.state.chrome_client

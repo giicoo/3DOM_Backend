@@ -4,7 +4,6 @@ from bson import ObjectId
 from fastapi import Depends
 from app.core.database import get_chrome_db, get_db
 from motor.motor_asyncio import AsyncIOMotorDatabase
-from chromadbx import DocumentSHA256Generator, RandomSHA256Generator, UUIDGenerator
 from chromadb.api.models.AsyncCollection import AsyncCollection
 from app.core.log import Logger
 from app.core.error import APIError
@@ -34,7 +33,7 @@ class ChromaRepository:
                 query_embeddings=embeddings,
                 n_results=n,
                 )
-            return results["ids"][0]
+            return results["documents"][0]
         except Exception as e:
             raise Exception(f"chroma repository: query: {e}")
         

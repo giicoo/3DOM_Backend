@@ -1,0 +1,93 @@
+services:
+  file-service:
+    build: ./file-service
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./file-service:/app
+    working_dir: /app
+    ports:
+      - 8001:8000
+  
+  message-service:
+    build: ./message-service
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./message-service:/app
+    working_dir: /app
+    ports:
+      - 8002:8000
+  
+  chat-service:
+    build: ./chat-service
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./chat-service:/app
+    working_dir: /app
+    ports:
+      - 8003:8000
+    
+ 
+
+  ollama-service:
+    build: ./ollama-service
+    tty: true
+    stdin_open: true
+    volumes:
+      - ./ollama-service:/app
+    working_dir: /app
+    ports:
+      - 8004:8000
+    # network_mode: host
+
+
+  chroma-server:
+    image: chromadb/chroma
+    volumes:
+      - chroma_data:/data
+    ports:
+      - "8080:8000"
+
+  mongo:
+    image: mongo
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - 27017:27017
+    volumes:
+      - mongo-data:/data/db
+
+  mongo-express:
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: root
+      ME_CONFIG_MONGODB_ADMINPASSWORD: example
+      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_BASICAUTH: false
+    depends_on:
+      - mongo
+
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - 11434:11434
+    volumes:
+      - ollama:/root/.ollama
+    container_name: ollama
+    tty: true
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  chroma_data:
+  ollama-data:
+  open-webui-data:
+  mongo-data:

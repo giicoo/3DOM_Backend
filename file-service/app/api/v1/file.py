@@ -1,14 +1,7 @@
-from io import BytesIO
 import os
 import shutil
-from typing import List
-from bson import ObjectId
-from docx import Document
-from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, WebSocket
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 from fastapi.responses import JSONResponse
-from pypdf import PdfReader
-from sse_starlette import EventSourceResponse
-from app.core.log import Logger
 from app.services.file import FileService, get_file_service
 from app.core.error import APIError
 from app.schemas.file import ContextIn, ContextOut, Properties
@@ -38,9 +31,9 @@ async def create_upload_file(chat_id: str = Form(..., examples=["5eb7cf5a86d9755
         raise APIError(code=400, message="Не можем определить файл. Попробуйте еще раз или поменяйте название на английский язык")
 
     
-    await fileService.upload_text_file(chat_id=chat_id, filename=file.filename)
+    ids = await fileService.upload_text_file(chat_id=chat_id, filename=file.filename)
     os.remove(temp_path)
-    return JSONResponse({"message":"ok"})
+    return JSONResponse({"ids":ids})
 
 
 @FileRouter.post("/get_context", response_model=ContextOut)

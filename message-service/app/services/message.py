@@ -1,26 +1,56 @@
 from typing import List
 from fastapi import Depends
+import httpx
 from app.domain.message import Message
 from app.repository.message import MessageRepository, get_msg_repo
-
+from app.core.environment import OLLAMA_URI
 
 class MessageService:
     def __init__(self, repo: MessageRepository):
         self.repo = repo
     
     async def create_message(self, msg: Message) -> str:
-        # перекидываю зависимости на файлы, если у родителей они были
-        parent_message = await self.repo.get_message(msg.parent_id)
-        if parent_message.res_ids:
-            msg.res_ids = parent_message.res_ids
+        try:
+            # перекидываю зависимости на файлы, если у родителей они были
+            parent_message = await self.repo.get_message(msg.parent_id)
+            if parent_message.res_ids:
+                msg.res_ids += parent_message.res_ids
 
-        return await self.repo.create_message(msg)
-    
+            return await self.repo.create_message(msg)
+        except Exception as e:
+            raise Exception("message service: create message: {e}")
+        
     async def get_message(self, id: str) -> Message:
-        return await self.repo.get_message(id)
+        try:
+            return await self.repo.get_message(id)
+        except Exception as e:
+            raise Exception("message service: get message: {e}")
     
     async def get_branch_messages(self, id: str) -> List[Message]:
-        # рекурсивно получаю каждое родительское сообщение поднимаясь вверх до parent_id = null 
+        """
+        Рекурсивно получаю каждое родительское сообщение поднимаясь вверх до parent_id = null 
+
+        Пример схема: 
+
+        __________________________________________
+            |id=1; parent_id=null|
+
+                        /     \ 
+
+        |id=2; parent_id=1|  |id=3; parent_id=1|
+                |
+        |id=4; parent_id=2| 
+
+        __________________________________________
+        
+        Если get_branch_messages(4):
+        1. Получаем id=4
+        2. По parent_id=2 получаем id=2
+        3. По parent_id=1 получаем id=1
+
+        Возвращаем [id=1, id=2, id=4]
+        """
+        
         messages = []
         message = await self.repo.get_message(id)
         messages.append(message)
@@ -30,11 +60,59 @@ class MessageService:
 
         return messages
     
-    async def stream(self, id: str):
+    async def get_all(self, chat_id:str):
+        messages = await self.repo.get_messages(chat_id=chat_id)
+        return messages
+    
+    async def stream(self, id: str, chat_id: str):
+        """
+        Вызывается после create_message, получая id последнего добавленного сообщения, получаем необходимую ветку.
+        Генерируем ответ и сохраняем новое сообщение с parent_id=id
+        """
         messages = await self.get_branch_messages(id)
-        text = "qwerttyuop[asdghfgxvnxbvnx]"
-        for i in text:
-            yield i
+        message = messages[-1]
+        model = ""
+
+        async with httpx.AsyncClient(timeout=None) as client:
+
+                chat = await client.post(
+                    f"http://chat-service:8000/get/{chat_id}",
+                    json=input
+                )
+
+                chat = chat.json()
+                model = chat["model"]
+
+        async with httpx.AsyncClient(timeout=None) as client:
+
+            context = await client.post(
+                "http://ollama-service:8000/get_context",
+                json= {
+                    "ids": message.res_ids,
+                    "prompt": message.content
+                }
+            )
+
+            context = context.json()["context"]
+
+
+
+            async with client.stream(
+                "POST",
+                "http://ollama-service:8000/stream",
+                json={
+                    "model": model,
+                    "msgs": [
+                        {"role":m.role, "content":m.content} for m in messages
+                    ],
+                    "context": context
+                },
+                headers={"Accept": "text/event-stream"}
+            ) as response:
+                async for line in response.aiter_lines():
+                    if line.startswith("data: "):
+                        yield line.removeprefix("data: ").strip()
+
             
 def get_msg_service(repo: MessageRepository = Depends(get_msg_repo)):
     return MessageService(repo)
