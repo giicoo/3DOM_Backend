@@ -12,7 +12,7 @@
 Внутри каждый микросервис представляет сервер приложение построенное на принципах чистой архитектуры с разделением слоев и общими сущностями.
 
 ## Схема
-![alt text](image.png)
+![alt text](assets/image.png)
 
 ## Swagger DOCS
 + *file-service*: https://giicoo.ru/api/file-service/docs
@@ -21,10 +21,10 @@
 + *ollama-service*: https://giicoo.ru/api/ollama-service/docs
 
 ### Endpoints
-![alt text](image-1.png)
-![alt text](image-2.png)
-![alt text](image-3.png)
-![alt text](image-4.png)
+![alt text](assets/image-1.png)
+![alt text](assets/image-2.png)
+![alt text](assets/image-3.png)
+![alt text](assets/image-4.png)
 
 
 ## Как используется
