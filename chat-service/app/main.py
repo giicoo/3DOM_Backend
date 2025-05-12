@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 import time
-
+from fastapi.middleware.cors import CORSMiddleware
 from beanie import init_beanie
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
@@ -24,11 +24,20 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
+    root_path="/api/chat-service",
     title=APP_NAME + " chat service",
     version=API_VERSION,
     lifespan=lifespan
 )
 
+# Разрешаем CORS для всех доменов (не безопасно для продакшн)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # или список доменов, которым разрешено подключение
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешаем все методы: GET, POST, и т.д.
+    allow_headers=["*"],  # Разрешаем все заголовки
+)
 
 @app.exception_handler(APIError)
 async def exception_handler(request: Request, exc: APIError):

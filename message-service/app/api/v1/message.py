@@ -40,7 +40,7 @@ async def get_messages(chat_id: str, msgService: MessageService = Depends(get_ms
 
     return messages
 
-@MsgRouter.post("/stream")
+@MsgRouter.get("/stream")
 async def stream(id: str, msgService: MessageService = Depends(get_msg_service)):
     try:
         return EventSourceResponse(msgService.stream(id))

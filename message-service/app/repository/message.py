@@ -16,12 +16,15 @@ class MessageRepository:
 
     async def create_message(self, msg: Message) -> str:
         try:
-            message = MessageDocument(chat_id=msg.chat_id,
-                                    parent_id=msg.parent_id,
+            
+            message = MessageDocument(chat_id=ObjectId(msg.chat_id),
+                                    parent_id=None,
                                     res_ids=msg.res_ids,
                                     content=msg.content,
                                     role=msg.role,
                                     created_at=msg.created_at)
+            if msg.parent_id:
+                message.parent_id = msg.parent_id
             await message.save()
             
             return str(message.id)

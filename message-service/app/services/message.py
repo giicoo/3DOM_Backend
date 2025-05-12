@@ -112,8 +112,10 @@ class MessageService:
                     if line.startswith("data: "):
                         full_response+=line.removeprefix("data: ")
                         yield line.removeprefix("data: ")
-        ida = await self.create_message(Message(chat_id=str(message.chat_id), role="assistant", content=full_response, parent_id=id, res_ids=[str(i) for i in message.res_ids]))
-        yield f"ID: {ida}"
+
+        # ida = await self.create_message(Message(chat_id=str(message.chat_id), role="assistant", content=full_response, parent_id=id, res_ids=[str(i) for i in message.res_ids]))
+        # yield f"ID: {ida}"
+        yield "[DONE]"
             
 def get_msg_service(repo: MessageRepository = Depends(get_msg_repo)):
     return MessageService(repo)
