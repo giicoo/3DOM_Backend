@@ -5,11 +5,22 @@ from app.core.error import APIError
 from app.api.v1.ollama import OllamaRouter
 from app.core.environment import API_VERSION, APP_NAME
 from app.core.log import Logger
+from fastapi.middleware.cors import CORSMiddleware
 
 
 app = FastAPI(
+    root_path="/api/ollama-service",
     title=APP_NAME+" ollama service",
     version=API_VERSION,
+)
+
+# Разрешаем CORS для всех доменов (не безопасно для продакшн)
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # или список доменов, которым разрешено подключение
+    allow_credentials=True,
+    allow_methods=["*"],  # Разрешаем все методы: GET, POST, и т.д.
+    allow_headers=["*"],  # Разрешаем все заголовки
 )
 
 @app.exception_handler(APIError)
